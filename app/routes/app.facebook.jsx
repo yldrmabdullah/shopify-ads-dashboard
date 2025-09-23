@@ -5,10 +5,14 @@ import DateRangeControls, { getPresetRange } from "../components/DateRangeContro
 import { useMemo, useState } from "react";
 import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
+import ConnectPrompt from "../components/ConnectPrompt";
+import { useLoaderData } from "@remix-run/react";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
-  return null;
+  const { isConnected } = await import("../services/connections.server.js");
+  const connected = isConnected("meta");
+  return { connected };
 };
 
 function Metric({ label, value }) {
@@ -25,6 +29,7 @@ function Metric({ label, value }) {
 export default function FacebookPage() {
   const defaultRange = useMemo(() => getPresetRange("this_month"), []);
   const [selectedDates, setSelectedDates] = useState(defaultRange);
+  const { connected } = useLoaderData();
 
   const rows = [
     ["Campaign A", "$300.00", "$0.85", "$1,200.00", "4.0"],
@@ -38,24 +43,34 @@ export default function FacebookPage() {
         <Layout.Section>
           <IconHeader iconSrc="/icons/meta.svg" title="Meta Ads" size={22} />
         </Layout.Section>
-        <Layout.Section>
-          <DateRangeControls selectedDates={selectedDates} onChange={setSelectedDates} />
-        </Layout.Section>
-        <Layout.Section>
-          <KeyMetrics title="Meta Ads - Key Metrics" />
-        </Layout.Section>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="200">
-              <Text as="h3" variant="headingMd">Campaigns</Text>
-              <DataTable
-                columnContentTypes={["text","text","text","text","text"]}
-                headings={["Campaign","Spend","CPC","Revenue","ROAS"]}
-                rows={rows}
-              />
-            </BlockStack>
-          </Card>
-        </Layout.Section>
+        {connected ? (
+          <Layout.Section>
+            <DateRangeControls selectedDates={selectedDates} onChange={setSelectedDates} />
+          </Layout.Section>
+        ) : null}
+        {connected ? (
+          <Layout.Section>
+            <KeyMetrics title="Meta Ads - Key Metrics" />
+          </Layout.Section>
+        ) : (
+          <Layout.Section>
+            <ConnectPrompt platform="Meta Ads" />
+          </Layout.Section>
+        )}
+        {connected ? (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h3" variant="headingMd">Campaigns</Text>
+                <DataTable
+                  columnContentTypes={["text","text","text","text","text"]}
+                  headings={["Campaign","Spend","CPC","Revenue","ROAS"]}
+                  rows={rows}
+                />
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        ) : null}
       </Layout>
     </Page>
   );

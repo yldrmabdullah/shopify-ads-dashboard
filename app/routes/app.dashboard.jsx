@@ -5,29 +5,24 @@ import { useCallback, useMemo, useState } from "react";
 import DateRangeControls, { getPresetRange } from "../components/DateRangeControls";
 import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
+import ConnectPrompt from "../components/ConnectPrompt";
+import { useLoaderData } from "@remix-run/react";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
-  return null;
+  const { isConnected } = await import("../services/connections.server.js");
+  return {
+    googleConnected: isConnected("google"),
+    metaConnected: isConnected("meta"),
+  };
 };
 
-function MetricCard({ title, value, secondary }) {
-  return (
-    <Card>
-      <BlockStack gap="200">
-        <Text as="h3" variant="headingMd">{title}</Text>
-        <Text as="p" variant="headingLg">{value}</Text>
-        {secondary ? (
-          <Text as="p" tone="subdued">{secondary}</Text>
-        ) : null}
-      </BlockStack>
-    </Card>
-  );
-}
+// removed unused MetricCard
 
 export default function DashboardPage() {
   const defaultRange = useMemo(() => getPresetRange("this_month"), []);
   const [selectedDates, setSelectedDates] = useState(defaultRange);
+  const { googleConnected, metaConnected } = useLoaderData();
 
   const metricPresets = useMemo(() => ({
     core: {
@@ -57,16 +52,30 @@ export default function DashboardPage() {
         <Layout.Section>
           <IconHeader iconSrc="/icons/dashboard.svg" title="Dashboard" size={22} />
         </Layout.Section>
-        <Layout.Section>
-          <DateRangeControls selectedDates={selectedDates} onChange={setSelectedDates} />
-        </Layout.Section>
+        {(googleConnected || metaConnected) ? (
+          <Layout.Section>
+            <DateRangeControls selectedDates={selectedDates} onChange={setSelectedDates} />
+          </Layout.Section>
+        ) : null}
 
-        <Layout.Section>
-          <KeyMetrics title="Google Ads - Key Metrics" />
-        </Layout.Section>
-        <Layout.Section>
-          <KeyMetrics title="Meta Ads - Key Metrics" />
-        </Layout.Section>
+        {googleConnected ? (
+          <Layout.Section>
+            <KeyMetrics title="Google Ads - Key Metrics" />
+          </Layout.Section>
+        ) : (
+          <Layout.Section>
+            <ConnectPrompt platform="Google Ads" />
+          </Layout.Section>
+        )}
+        {metaConnected ? (
+          <Layout.Section>
+            <KeyMetrics title="Meta Ads - Key Metrics" />
+          </Layout.Section>
+        ) : (
+          <Layout.Section>
+            <ConnectPrompt platform="Meta Ads" />
+          </Layout.Section>
+        )}
       </Layout>
     </Page>
   );
