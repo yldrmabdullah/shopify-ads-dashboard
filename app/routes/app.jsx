@@ -21,6 +21,7 @@ export default function App() {
       <NavMenu>
         <Link to="/app" rel="home">🏠 Home</Link>
         <Link to="/app/dashboard">📊 Dashboard</Link>
+        <Link to="/app/analytics">🚀 Analytics</Link>
         <Link to="/app/google">Google Ads</Link>
         <Link to="/app/facebook">Meta Ads</Link>
         <Link to="/app/connections">🔗 Connections</Link>
