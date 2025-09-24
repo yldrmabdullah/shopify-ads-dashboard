@@ -2,6 +2,8 @@ import prisma from "../db.server";
 import { encrypt, decrypt } from "../utils/crypto.server";
 import { isTestMode, getCurrentConfig, isMockDataEnabled, getCredentials } from "../config/app.server.js";
 import { getMockData } from "../data/mockData.server.js";
+import { GoogleAdsClient, refreshGoogleAccessToken } from "./google-ads.server.js";
+import { MetaAdsClient, validateMetaAccessToken } from "./meta-ads.server.js";
 
 export async function isConnected(platform, shopDomain) {
   if (!shopDomain) return false;
@@ -114,50 +116,28 @@ async function fetchGoogleAdsMetrics(shopDomain, dateRange) {
     }
     
     const googleConn = connection.GoogleConnection;
-    const refreshToken = decrypt(googleConn.refreshTokenEnc);
     
-    // Get access token using refresh token
-    const credentials = getCredentials('google');
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: credentials.clientId,
-        client_secret: credentials.clientSecret,
-      }),
-    });
+    // Get fresh access token
+    const accessToken = await refreshGoogleAccessToken(googleConn.refreshTokenEnc);
     
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to refresh Google access token');
+    // Create Google Ads client
+    const googleAdsClient = new GoogleAdsClient(accessToken, googleConn.managerId);
+    
+    // Use selected external ID as account ID
+    const accountId = googleConn.selectedExternalId;
+    if (!accountId) {
+      throw new Error('Google Ads account ID not found');
     }
     
-    const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-    
-    const startDate = dateRange?.start ? formatDateForGoogle(dateRange.start) : getLastMonthStart();
-    const endDate = dateRange?.end ? formatDateForGoogle(dateRange.end) : getLastMonthEnd();
-    
-    // TODO: Implement Google Ads API calls with accessToken, startDate, endDate
+    // Fetch metrics and campaigns
+    const [metricsData, campaignsData] = await Promise.all([
+      googleAdsClient.fetchMetrics(accountId, dateRange),
+      googleAdsClient.fetchCampaigns(accountId, dateRange)
+    ]);
     
     return {
-      keyMetrics: [
-        { metric: "clicks", value: "25.4k", deltaPct: 15.2 },
-        { metric: "impressions", value: "892.1k", deltaPct: 8.7 },
-        { metric: "cost", value: "$1,247.89", deltaPct: -3.2 },
-        { metric: "conversions", value: "189", deltaPct: 12.8 },
-        { metric: "revenue", value: "$7,234.56", deltaPct: 18.9 },
-        { metric: "roas", value: "5.80", deltaPct: 22.4 },
-        { metric: "ctr", value: "2.85%", deltaPct: 5.1 },
-        { metric: "cpc", value: "$6.60", deltaPct: -8.4 }
-      ],
-      campaigns: [
-        ["Holiday Shopping | Google Search", "$420.50", "$3.20", "$1,842.00", "4.38", "Active"],
-        ["Brand Awareness | Display Network", "$318.75", "$2.85", "$1,156.00", "3.63", "Active"], 
-        ["Product Reviews | YouTube Ads", "$287.60", "$4.12", "$978.00", "3.40", "Paused"],
-        ["Winter Sale | Shopping Campaign", "$502.90", "$2.95", "$2,156.00", "4.29", "Active"]
-      ],
+      ...metricsData,
+      campaigns: campaignsData,
       accountInfo: {
         accountName: googleConn.selectedName || "Google Ads Account",
         accountId: googleConn.selectedExternalId || "123-456-7890",
@@ -198,30 +178,30 @@ async function fetchMetaAdsMetrics(shopDomain, dateRange) {
     const metaConn = connection.MetaConnection;
     const accessToken = decrypt(metaConn.longLivedTokenEnc);
     
-    const startDate = dateRange?.start ? formatDateForMeta(dateRange.start) : getLastMonthStart();
-    const endDate = dateRange?.end ? formatDateForMeta(dateRange.end) : getLastMonthEnd();
+    // Validate token first
+    const isValidToken = await validateMetaAccessToken(accessToken);
+    if (!isValidToken) {
+      throw new Error('Invalid Meta access token');
+    }
     
-    // TODO: Implement Meta Ads API calls with accessToken, startDate, endDate
+    // Create Meta Ads client
+    const metaAdsClient = new MetaAdsClient(accessToken);
+    
+    // Use meta account ID
+    const accountId = metaConn.metaAccountId;
+    if (!accountId) {
+      throw new Error('Meta Ads account ID not found');
+    }
+    
+    // Fetch metrics and campaigns
+    const [metricsData, campaignsData] = await Promise.all([
+      metaAdsClient.fetchMetrics(accountId, dateRange),
+      metaAdsClient.fetchCampaigns(accountId, dateRange)
+    ]);
     
     return {
-      keyMetrics: [
-        { metric: "reach", value: "156.8k", deltaPct: 18.9 },
-        { metric: "impressions", value: "743.2k", deltaPct: 12.4 },
-        { metric: "cost", value: "$986.45", deltaPct: -5.8 },
-        { metric: "clicks", value: "12.7k", deltaPct: 9.6 },
-        { metric: "conversions", value: "234", deltaPct: 22.3 },
-        { metric: "revenue", value: "$4,567.89", deltaPct: 28.7 },
-        { metric: "roas", value: "4.63", deltaPct: 15.4 },
-        { metric: "ctr", value: "1.71%", deltaPct: 8.3 },
-        { metric: "cpm", value: "$1.33", deltaPct: -12.1 },
-        { metric: "cpc", value: "$0.78", deltaPct: -15.2 }
-      ],
-      campaigns: [
-        ["Holiday Collection | Facebook Feed", "$245.80", "$0.85", "$1,456.00", "3.12", "Active"],
-        ["Brand Launch | Instagram Stories", "$198.30", "$1.12", "$987.00", "2.89", "Active"],
-        ["Tutorial Videos | Facebook Video", "$312.75", "$0.95", "$1,678.00", "3.58", "Active"],
-        ["Lifestyle Content | Instagram Reels", "$167.90", "$0.72", "$823.00", "2.95", "Paused"]
-      ],
+      ...metricsData,
+      campaigns: campaignsData,
       accountInfo: {
         accountName: metaConn.metaAdName || "Meta Business Account",
         accountId: metaConn.metaAccountId || "987654321",
@@ -243,14 +223,24 @@ async function fetchMetaAdsMetrics(shopDomain, dateRange) {
   }
 }
 
-function formatDateForGoogle(date) {
+/**
+ * Utility functions for date formatting
+ * These functions are used by both Google and Meta API services
+ */
+
+/**
+ * Format date for API usage (YYYY-MM-DD format)
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date string
+ */
+function formatDateForAPI(date) {
   return date instanceof Date ? date.toISOString().split('T')[0] : date;
 }
 
-function formatDateForMeta(date) {
-  return date instanceof Date ? date.toISOString().split('T')[0] : date;
-}
-
+/**
+ * Get the start date of the last month
+ * @returns {string} Formatted date string
+ */
 function getLastMonthStart() {
   const date = new Date();
   date.setMonth(date.getMonth() - 1);
@@ -258,6 +248,10 @@ function getLastMonthStart() {
   return date.toISOString().split('T')[0];
 }
 
+/**
+ * Get the end date of the last month  
+ * @returns {string} Formatted date string
+ */
 function getLastMonthEnd() {
   const date = new Date();
   date.setDate(0);

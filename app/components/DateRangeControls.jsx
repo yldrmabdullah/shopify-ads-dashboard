@@ -1,67 +1,20 @@
 import { useCallback, useMemo, useState } from "react";
 import { Card, BlockStack, InlineStack, Text, DatePicker, Button, Box, TextField, InlineGrid } from "@shopify/polaris";
+import { getPresetDateRange, addDateRangeVariation } from "../utils/dateUtils.js";
+import { formatDateForInput, parseInputDate } from "../utils/formatters.js";
 
+// Export the utility function for backward compatibility
 export function getPresetRange(presetId) {
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  switch (presetId) {
-    case "today": {
-      return { start: startOfToday, end: startOfToday };
-    }
-    case "yesterday": {
-      const y = new Date(startOfToday);
-      y.setDate(y.getDate() - 1);
-      return { start: y, end: y };
-    }
-    case "last_week": {
-      const end = startOfToday;
-      const start = new Date(end);
-      start.setDate(end.getDate() - 6);
-      return { start, end };
-    }
-    case "this_month": {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { start, end: startOfToday };
-    }
-    case "last_7_days": {
-      const end = startOfToday;
-      const start = new Date(end);
-      start.setDate(end.getDate() - 6);
-      return { start, end };
-    }
-    case "last_month": {
-      const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const end = new Date(today.getFullYear(), today.getMonth(), 0);
-      return { start, end };
-    }
-    default: {
-      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-      return { start, end: startOfToday };
-    }
-  }
+  return getPresetDateRange(presetId);
 }
 
+// Use utility functions instead of local implementations
 function toInputValue(date) {
-  if (!date) return "";
-  const d = new Date(date);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
+  return formatDateForInput(date);
 }
 
 function parseInputValue(value) {
-  if (!value || !value.includes("/")) return null;
-  const [dd, mm, yyyy] = value.split("/");
-  const day = Number(dd);
-  const month = Number(mm) - 1;
-  const year = Number(yyyy);
-  
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-  if (day < 1 || day > 31 || month < 0 || month > 11 || year < 1900) return null;
-  
-  return new Date(year, month, day);
+  return parseInputDate(value);
 }
 
 export default function DateRangeControls({
@@ -92,10 +45,7 @@ export default function DateRangeControls({
 
   const commit = useCallback(() => {
     // Add random variation on each apply to force new data
-    const rangeWithVariation = {
-      ...tempRange,
-      _variation: Math.random() // This will force new data generation
-    };
+    const rangeWithVariation = addDateRangeVariation(tempRange);
     onChange(rangeWithVariation);
     onApply?.(rangeWithVariation);
   }, [onApply, onChange, tempRange]);
