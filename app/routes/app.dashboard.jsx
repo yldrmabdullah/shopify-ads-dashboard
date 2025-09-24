@@ -1,49 +1,33 @@
 import { authenticate } from "../shopify.server";
 import { TitleBar } from "@shopify/app-bridge-react";
 import { Page, Layout } from "@shopify/polaris";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import DateRangeControls, { getPresetRange } from "../components/DateRangeControls";
 import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
 import ConnectPrompt from "../components/ConnectPrompt";
 import { useLoaderData } from "@remix-run/react";
+import { isTestMode } from "../config/app.server.js";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const { isConnected } = await import("../services/connections.server.js");
-  return {
-    googleConnected: isConnected("google"),
-    metaConnected: isConnected("meta"),
+  const [googleConnected, metaConnected] = await Promise.all([
+    isConnected("google", session.shop),
+    isConnected("meta", session.shop),
+  ]);
+  return { 
+    googleConnected, 
+    metaConnected, 
+    isTestMode: isTestMode(),
+    shopDomain: session.shop
   };
 };
-
-// removed unused MetricCard
 
 export default function DashboardPage() {
   const defaultRange = useMemo(() => getPresetRange("this_month"), []);
   const [selectedDates, setSelectedDates] = useState(defaultRange);
-  const { googleConnected, metaConnected } = useLoaderData();
-
-  const metricPresets = useMemo(() => ({
-    core: {
-      label: "Core",
-      metrics: [
-        { title: "Total Spend", value: "$2,430.00" },
-        { title: "Avg CPC", value: "$0.75" },
-        { title: "Total Revenue", value: "$9,720.00" },
-        { title: "Total ROAS", value: "4.00" },
-      ],
-    },
-    efficiency: {
-      label: "Efficiency",
-      metrics: [
-        { title: "CPA", value: "$12.50" },
-        { title: "CTR", value: "2.4%" },
-        { title: "CVR", value: "3.1%" },
-        { title: "AOV", value: "$82.00" },
-      ],
-    },
-  }), [selectedDates]);
+  const { googleConnected, metaConnected, isTestMode: testMode } = useLoaderData();
 
   return (
     <Page>
@@ -60,7 +44,12 @@ export default function DashboardPage() {
 
         {googleConnected ? (
           <Layout.Section>
-            <KeyMetrics title="Google Ads - Key Metrics" />
+            <KeyMetrics 
+              title="Google Ads - Key Metrics" 
+              platform="google"
+              dateRange={selectedDates}
+              isTestMode={testMode}
+            />
           </Layout.Section>
         ) : (
           <Layout.Section>
@@ -69,7 +58,12 @@ export default function DashboardPage() {
         )}
         {metaConnected ? (
           <Layout.Section>
-            <KeyMetrics title="Meta Ads - Key Metrics" />
+            <KeyMetrics 
+              title="Meta Ads - Key Metrics" 
+              platform="meta"
+              dateRange={selectedDates}
+              isTestMode={testMode}
+            />
           </Layout.Section>
         ) : (
           <Layout.Section>

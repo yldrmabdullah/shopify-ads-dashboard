@@ -1,6 +1,7 @@
 import { redirect } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { saveGoogleAuth, setConnected } from "../services/connections.server";
+import { getCredentials } from "../config/app.server.js";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -16,15 +17,21 @@ export const loader = async ({ request }) => {
   }
 
   const origin = `${url.protocol}//${url.host}`;
-  const redirectUri = `${origin}/app/connections/google/callback`;
+  const credentials = getCredentials('google');
+  const redirectUri = credentials?.redirectUri || `${origin}/app/connections/google/callback`;
+
+  if (!credentials?.clientId || !credentials?.clientSecret) {
+    console.error('Google credentials not found in configuration');
+    return redirect(`/app/connections?google_error=missing_credentials`);
+  }
 
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: process.env.GOOGLE_CLIENT_ID || "",
-      client_secret: process.env.GOOGLE_CLIENT_SECRET || "",
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
     }).toString(),
@@ -36,14 +43,14 @@ export const loader = async ({ request }) => {
 
   const tokenJson = await tokenRes.json();
   const refreshToken = tokenJson.refresh_token;
-  const email = tokenJson.id_token ? undefined : undefined;
+  const email = tokenJson.email;
 
   if (!refreshToken) {
-    // If no refresh_token returned, user may have connected before; prompt=consent + access_type=offline should mitigate.
     return redirect(`/app/connections?google_error=missing_refresh_token`);
   }
 
-  await saveGoogleAuth(session.shop, {
+  await saveGoogleAuth({
+    shopDomain: session.shop,
     refreshToken,
     email,
     managerId: null,

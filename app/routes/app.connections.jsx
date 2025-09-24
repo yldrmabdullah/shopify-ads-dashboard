@@ -1,9 +1,10 @@
 import { authenticate } from "../shopify.server";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { Page, Layout, Card, BlockStack, Text, InlineStack, Button, InlineGrid } from "@shopify/polaris";
+import { Page, Layout, Card, BlockStack, Text, InlineStack, Button, InlineGrid, Badge } from "@shopify/polaris";
 import IconHeader from "../components/IconHeader";
 import { Form, useLoaderData } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
+import { isTestMode } from "../config/app.server.js";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -12,6 +13,7 @@ export const loader = async ({ request }) => {
   return {
     googleConnected: await isConnected("google", shopDomain),
     metaConnected: await isConnected("meta", shopDomain),
+    isTestMode: isTestMode(),
   };
 };
 
@@ -49,13 +51,18 @@ export const action = async ({ request }) => {
 };
 
 export default function ConnectionsPage() {
-  const { googleConnected, metaConnected } = useLoaderData();
+  const { googleConnected, metaConnected, isTestMode } = useLoaderData();
   return (
     <Page>
       <TitleBar title="Connections" />
       <Layout>
         <Layout.Section>
-          <IconHeader iconSrc="/icons/dashboard.svg" title="Connections" />
+          <InlineStack gap="300" blockAlign="center">
+            <IconHeader iconSrc="/icons/dashboard.svg" title="Connections" />
+            {isTestMode && (
+              <Badge tone="info">Test Mode Active</Badge>
+            )}
+          </InlineStack>
         </Layout.Section>
         <Layout.Section>
           <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
@@ -64,6 +71,9 @@ export default function ConnectionsPage() {
                 <InlineStack gap="200" blockAlign="center">
                   <img src="/icons/google.svg" width={20} height={20} alt="" />
                   <Text as="h3" variant="headingMd">Google Ads</Text>
+                  {isTestMode && (
+                    <Badge tone="warning" size="small">Test Mode</Badge>
+                  )}
                 </InlineStack>
                 <Text as="p" tone="subdued">Connect your Google Ads account to fetch metrics.</Text>
                 {googleConnected ? (
@@ -76,28 +86,17 @@ export default function ConnectionsPage() {
                     </InlineStack>
                   </Form>
                 ) : (
-                  <Form action="/app/connections/google/start" method="get">
+                  <Form method="post">
+                    <input type="hidden" name="platform" value="google" />
+                    <input type="hidden" name="intent" value="connect" />
                     <InlineStack gap="200">
-                      <Button submit variant="primary">Connect</Button>
+                      <Button submit variant="primary">
+                        {isTestMode ? "Connect (Test Mode)" : "Connect"}
+                      </Button>
                       <Button url="https://ads.google.com" target="_blank">Learn more</Button>
                     </InlineStack>
                   </Form>
                 )}
-                {!googleConnected ? (
-                  <Form method="post">
-                    <input type="hidden" name="action" value="saveGoogle" />
-                    <InlineStack gap="200" wrap>
-                      <input name="refreshToken" placeholder="Google refreshToken" style={{width: '100%'}} />
-                      <input name="email" placeholder="Email" />
-                      <input name="managerId" placeholder="Manager ID" />
-                      <input name="managerName" placeholder="Manager Name" />
-                      <input name="externalId" placeholder="Account External ID" />
-                      <input name="accountName" placeholder="Account Name" />
-                      <input name="currencyCode" placeholder="Currency (e.g. TRY)" />
-                      <Button submit variant="secondary">Save credentials (dev)</Button>
-                    </InlineStack>
-                  </Form>
-                ) : null}
               </BlockStack>
             </Card>
             <Card>
@@ -105,6 +104,9 @@ export default function ConnectionsPage() {
                 <InlineStack gap="200" blockAlign="center">
                   <img src="/icons/meta.svg" width={20} height={20} alt="" />
                   <Text as="h3" variant="headingMd">Meta Ads</Text>
+                  {isTestMode && (
+                    <Badge tone="warning" size="small">Test Mode</Badge>
+                  )}
                 </InlineStack>
                 <Text as="p" tone="subdued">Connect your Meta Ads account to fetch metrics.</Text>
                 {metaConnected ? (
@@ -121,23 +123,13 @@ export default function ConnectionsPage() {
                     <input type="hidden" name="platform" value="meta" />
                     <input type="hidden" name="intent" value="connect" />
                     <InlineStack gap="200">
-                      <Button submit variant="primary">Connect</Button>
+                      <Button submit variant="primary">
+                        {isTestMode ? "Connect (Test Mode)" : "Connect"}
+                      </Button>
                       <Button url="https://www.facebook.com/business/ads" target="_blank">Learn more</Button>
                     </InlineStack>
                   </Form>
                 )}
-                {!metaConnected ? (
-                  <Form method="post">
-                    <input type="hidden" name="action" value="saveMeta" />
-                    <InlineStack gap="200" wrap>
-                      <input name="longLivedToken" placeholder="Meta long-lived token" style={{width: '100%'}} />
-                      <input name="metaAccountId" placeholder="Business Account ID" />
-                      <input name="metaAdId" placeholder="Ad Account ID (act_...)" />
-                      <input name="metaAdName" placeholder="Ad Account Name" />
-                      <Button submit variant="secondary">Save credentials (dev)</Button>
-                    </InlineStack>
-                  </Form>
-                ) : null}
               </BlockStack>
             </Card>
           </InlineGrid>

@@ -1,47 +1,69 @@
 import { authenticate } from "../shopify.server";
 import { TitleBar } from "@shopify/app-bridge-react";
-import { Page, Layout, Card, BlockStack, Text, InlineStack, DataTable } from "@shopify/polaris";
+import { Page, Layout, Card, BlockStack, Text, InlineStack, DataTable, Badge } from "@shopify/polaris";
 import DateRangeControls, { getPresetRange } from "../components/DateRangeControls";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import ConnectPrompt from "../components/ConnectPrompt";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
+import { isTestMode } from "../config/app.server.js";
 
 export const loader = async ({ request }) => {
-  await authenticate.admin(request);
+  const { session } = await authenticate.admin(request);
   const { isConnected } = await import("../services/connections.server.js");
-  const connected = isConnected("google");
-  return { connected };
+  const connected = await isConnected("google", session.shop);
+  return { 
+    connected, 
+    isTestMode: isTestMode(),
+    shopDomain: session.shop
+  };
 };
 
-function Metric({ label, value }) {
-  return (
-    <Card>
-      <BlockStack gap="200">
-        <Text as="h3" variant="headingMd">{label}</Text>
-        <Text as="p" variant="headingLg">{value}</Text>
-      </BlockStack>
-    </Card>
-  );
-}
 
 export default function GooglePage() {
   const defaultRange = useMemo(() => getPresetRange("this_month"), []);
   const [selectedDates, setSelectedDates] = useState(defaultRange);
-  const { connected } = useLoaderData();
+  const { connected, isTestMode: testMode } = useLoaderData();
+  const fetcher = useFetcher();
+  const [campaignData, setCampaignData] = useState(null);
 
-  const rows = [
-    ["Campaign 1", "$320.00", "$0.70", "$1,312.00", "4.10"],
-    ["Campaign 2", "$210.00", "$0.68", "$861.00", "4.10"],
+  // Default campaign rows for when data is loading or not available
+  const defaultRows = [
+    ["Loading Campaign Data...", "$0.00", "$0.00", "$0.00", "0.00", "Loading"],
+    ["Please wait...", "$0.00", "$0.00", "$0.00", "0.00", "Loading"],
   ];
+
+  // Fetch campaign data when connected and date range changes
+  useEffect(() => {
+    if (connected && selectedDates && fetcher.state === 'idle') {
+      fetcher.submit(
+        { platform: "google", dateRange: JSON.stringify(selectedDates) },
+        { method: "post", action: "/app/api/metrics" }
+      );
+    }
+  }, [connected, selectedDates]);
+
+  // Update campaign data when fetcher data changes
+  useEffect(() => {
+    if (fetcher.data && fetcher.data.campaigns) {
+      setCampaignData(fetcher.data);
+    }
+  }, [fetcher.data]);
+
+  const rows = campaignData?.campaigns || defaultRows;
 
   return (
     <Page>
       <TitleBar title="Google Ads" />
       <Layout>
         <Layout.Section>
-          <IconHeader iconSrc="/icons/google.svg" title="Google Ads" size={22} />
+          <InlineStack gap="300" blockAlign="center">
+            <IconHeader iconSrc="/icons/google.svg" title="Google Ads" size={22} />
+            {(testMode || campaignData?.isTestData) && (
+              <Badge tone="warning">Test Mode</Badge>
+            )}
+          </InlineStack>
         </Layout.Section>
         {connected ? (
           <Layout.Section>
@@ -50,7 +72,12 @@ export default function GooglePage() {
         ) : null}
         {connected ? (
           <Layout.Section>
-            <KeyMetrics title="Google Ads - Key Metrics" />
+            <KeyMetrics 
+              title="Google Ads - Key Metrics" 
+              platform="google"
+              dateRange={selectedDates}
+              isTestMode={testMode}
+            />
           </Layout.Section>
         ) : (
           <Layout.Section>
@@ -63,8 +90,8 @@ export default function GooglePage() {
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd">Campaigns</Text>
                 <DataTable
-                  columnContentTypes={["text","text","text","text","text"]}
-                  headings={["Campaign","Spend","CPC","Revenue","ROAS"]}
+                  columnContentTypes={["text","text","text","text","text","text"]}
+                  headings={["Campaign","Spend","CPC","Revenue","ROAS","Status"]}
                   rows={rows}
                 />
               </BlockStack>

@@ -1,8 +1,8 @@
 import crypto from "node:crypto";
 
-const KEY_HEX = process.env.APP_ENCRYPTION_KEY || ""; // 64 hex chars for 32 bytes
+const KEY_HEX = process.env.APP_ENCRYPTION_KEY || "";
 if (!KEY_HEX || KEY_HEX.length < 64) {
-  // Use a dummy key in dev to avoid crashes; replace in production
+  console.warn('APP_ENCRYPTION_KEY not set or too short. Using dummy key for development.');
 }
 
 const KEY = Buffer.from((KEY_HEX && KEY_HEX.length >= 64 ? KEY_HEX : "0".repeat(64)), "hex");
@@ -29,4 +29,7 @@ export function decryptString(cipherText) {
     return "";
   }
 }
+
+export const encrypt = encryptString;
+export const decrypt = decryptString;
 

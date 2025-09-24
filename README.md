@@ -1,10 +1,18 @@
-# Shopify App Template - Remix
+# Shopify Ads Dashboard - Remix App
 
-This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using the [Remix](https://remix.run) framework.
+A comprehensive Shopify app for managing and monitoring Google Ads and Meta (Facebook/Instagram) advertising campaigns. Built using the [Remix](https://remix.run) framework and integrated with Shopify's ecosystem.
 
-Rather than cloning this repo, you can use your preferred package manager and the Shopify CLI with [these steps](https://shopify.dev/docs/apps/getting-started/create).
+This app provides merchants with centralized advertising metrics, campaign management, and performance insights directly within their Shopify admin panel.
 
-Visit the [`shopify.dev` documentation](https://shopify.dev/docs/api/shopify-app-remix) for more details on the Remix app package.
+## Features
+
+- **Multi-Platform Integration**: Connect and monitor both Google Ads and Meta Ads accounts
+- **Real-time Metrics**: Live performance data with key metrics like clicks, impressions, conversions, and ROAS
+- **Campaign Management**: View and analyze campaign performance across platforms
+- **Test Mode**: Development environment with mock data for testing
+- **Secure Authentication**: OAuth 2.0 integration with encrypted token storage
+- **Date Range Filtering**: Customizable date ranges for performance analysis
+- **Responsive Design**: Optimized for all devices using Shopify Polaris components
 
 ## Quick start
 
@@ -15,6 +23,8 @@ Before you begin, you'll need the following:
 1. **Node.js**: [Download and install](https://nodejs.org/en/download/) it if you haven't already.
 2. **Shopify Partner Account**: [Create an account](https://partners.shopify.com/signup) if you don't have one.
 3. **Test Store**: Set up either a [development store](https://help.shopify.com/en/partners/dashboard/development-stores#create-a-development-store) or a [Shopify Plus sandbox store](https://help.shopify.com/en/partners/dashboard/managing-stores/plus-sandbox-store) for testing your app.
+4. **Google Ads Account**: Required for Google Ads integration (optional for testing)
+5. **Meta Business Account**: Required for Meta Ads integration (optional for testing)
 
 ### Setup
 
@@ -62,6 +72,26 @@ Press P to open the URL to your app. Once you click install, you can start devel
 
 Local development is powered by [the Shopify CLI](https://shopify.dev/docs/apps/tools/cli). It logs into your partners account, connects to an app, provides environment variables, updates remote config, creates a tunnel and provides commands to generate extensions.
 
+### Environment Variables
+
+For full functionality, set up the following environment variables in your `.env` file:
+
+```bash
+# Google Ads API (Optional for development)
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+
+# Meta Ads API (Optional for development)
+META_CLIENT_ID=your_meta_client_id
+META_CLIENT_SECRET=your_meta_client_secret
+
+# App Configuration
+SHOPIFY_APP_URL=your_app_url
+APP_ENCRYPTION_KEY=your_64_character_hex_key
+```
+
+**Note**: The app will work in test mode without these credentials, using mock data for development.
+
 ### Authenticating and querying data
 
 To authenticate and query data you can use the `shopify` const that is exported from `/app/shopify.server.js`:
@@ -90,11 +120,24 @@ export async function loader({ request }) {
 }
 ```
 
-This template comes preconfigured with examples of:
+This app comes preconfigured with:
 
-1. Setting up your Shopify app in [/app/shopify.server.ts](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/shopify.server.ts)
-2. Querying data using Graphql. Please see: [/app/routes/app.\_index.tsx](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/routes/app._index.tsx).
-3. Responding to webhooks in individual files such as [/app/routes/webhooks.app.uninstalled.tsx](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/routes/webhooks.app.uninstalled.tsx) and [/app/routes/webhooks.app.scopes_update.tsx](https://github.com/Shopify/shopify-app-template-remix/blob/main/app/routes/webhooks.app.scopes_update.tsx)
+1. **Dashboard**: Centralized view of all connected advertising platforms
+2. **Google Ads Integration**: OAuth authentication and metrics fetching
+3. **Meta Ads Integration**: Facebook/Instagram ads monitoring
+4. **Campaign Analytics**: Detailed campaign performance data
+5. **Test Mode**: Mock data for development and testing
+6. **Secure Data Storage**: Encrypted token storage using Prisma
+
+### App Structure
+
+- `/app/routes/app.dashboard.jsx` - Main dashboard with overview metrics
+- `/app/routes/app.google.jsx` - Google Ads specific page
+- `/app/routes/app.facebook.jsx` - Meta Ads specific page
+- `/app/routes/app.connections.jsx` - Platform connection management
+- `/app/services/connections.server.js` - API integration logic
+- `/app/config/app.server.js` - App configuration and credentials management
+- `/app/data/mockData.server.js` - Mock data for testing
 
 Please read the [documentation for @shopify/shopify-app-remix](https://www.npmjs.com/package/@shopify/shopify-app-remix#authenticating-admin-requests) to understand what other API's are available.
 
@@ -146,6 +189,17 @@ pnpm run build
 When you're ready to set up your app in production, you can follow [our deployment documentation](https://shopify.dev/docs/apps/deployment/web) to host your app on a cloud provider like [Heroku](https://www.heroku.com/) or [Fly.io](https://fly.io/).
 
 When you reach the step for [setting up environment variables](https://shopify.dev/docs/apps/deployment/web#set-env-vars), you also need to set the variable `NODE_ENV=production`.
+
+### Production Configuration
+
+For production deployment, ensure you have:
+
+1. **Valid API Credentials**: Set up real Google Ads and Meta Business API credentials
+2. **Database**: Configure a production database (PostgreSQL, MySQL, etc.)
+3. **Security**: Set a secure `APP_ENCRYPTION_KEY` for token encryption
+4. **OAuth Redirects**: Update redirect URLs in Google and Meta developer consoles
+
+See `DEPLOYMENT.md` for detailed production setup instructions.
 
 ### Hosting on Vercel
 
@@ -341,32 +395,101 @@ Shopify apps are built on a variety of Shopify tools to create a great merchant 
 <!-- TODO: Uncomment this after we've updated the docs -->
 <!-- The [create an app](https://shopify.dev/docs/apps/getting-started/create) tutorial in our developer documentation will guide you through creating a Shopify app using this template. -->
 
-The Remix app template comes with the following out-of-the-box functionality:
+The Shopify Ads Dashboard comes with the following out-of-the-box functionality:
 
-- [OAuth](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#authenticating-admin-requests): Installing the app and granting permissions
-- [GraphQL Admin API](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#using-the-shopify-admin-graphql-api): Querying or mutating Shopify admin data
-- [Webhooks](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#authenticating-webhook-requests): Callbacks sent by Shopify when certain events occur
-- [AppBridge](https://shopify.dev/docs/api/app-bridge): This template uses the next generation of the Shopify App Bridge library which works in unison with previous versions.
-- [Polaris](https://polaris.shopify.com/): Design system that enables apps to create Shopify-like experiences
+- **Shopify Integration**: 
+  - [OAuth](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#authenticating-admin-requests): Installing the app and granting permissions
+  - [GraphQL Admin API](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#using-the-shopify-admin-graphql-api): Querying or mutating Shopify admin data
+  - [Webhooks](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#authenticating-webhook-requests): Callbacks sent by Shopify when certain events occur
+
+- **Advertising Platform Integration**:
+  - **Google Ads OAuth**: Secure authentication and token management
+  - **Meta Ads OAuth**: Facebook/Instagram business account integration
+  - **Real-time Metrics**: Live campaign performance data
+  - **Campaign Management**: View and analyze campaign performance
+
+- **UI/UX**:
+  - [AppBridge](https://shopify.dev/docs/api/app-bridge): Seamless Shopify admin integration
+  - [Polaris](https://polaris.shopify.com/): Shopify-native design system and components
+  - **Responsive Design**: Mobile-friendly interface
+  - **Test Mode Indicators**: Clear visual feedback for development
+
+- **Data & Security**:
+  - **Encrypted Storage**: Secure token management using AES-256-GCM
+  - **Mock Data**: Development-friendly testing environment
+  - **Date Range Filtering**: Flexible performance analysis periods
 
 ## Tech Stack
 
-This template uses [Remix](https://remix.run). The following Shopify tools are also included to ease app development:
+This app uses [Remix](https://remix.run) as the core framework. The following technologies are included:
 
-- [Shopify App Remix](https://shopify.dev/docs/api/shopify-app-remix) provides authentication and methods for interacting with Shopify APIs.
-- [Shopify App Bridge](https://shopify.dev/docs/apps/tools/app-bridge) allows your app to seamlessly integrate your app within Shopify's Admin.
-- [Polaris React](https://polaris.shopify.com/) is a powerful design system and component library that helps developers build high quality, consistent experiences for Shopify merchants.
-- [Webhooks](https://github.com/Shopify/shopify-app-js/tree/main/packages/shopify-app-remix#authenticating-webhook-requests): Callbacks sent by Shopify when certain events occur
-- [Polaris](https://polaris.shopify.com/): Design system that enables apps to create Shopify-like experiences
+### Core Technologies
+- **[Remix](https://remix.run)**: Full-stack web framework for React
+- **[React](https://reactjs.org/)**: UI library for building interactive interfaces
+- **[Prisma](https://prisma.io/)**: Database ORM for data management
+- **[SQLite](https://sqlite.org/)**: Development database (configurable for production)
+
+### Shopify Integration
+- **[Shopify App Remix](https://shopify.dev/docs/api/shopify-app-remix)**: Authentication and Shopify API integration
+- **[Shopify App Bridge](https://shopify.dev/docs/apps/tools/app-bridge)**: Seamless admin panel integration
+- **[Polaris React](https://polaris.shopify.com/)**: Shopify's design system and UI components
+
+### Advertising APIs
+- **Google Ads API**: Campaign metrics and management
+- **Meta Business API**: Facebook/Instagram advertising data
+- **OAuth 2.0**: Secure authentication for all platforms
+
+### Security & Utilities
+- **AES-256-GCM Encryption**: Secure token storage
+- **Environment Configuration**: Flexible development/production setup
+- **Mock Data System**: Testing and development support
+
+## API Documentation
+
+### Google Ads API
+- [Google Ads API Documentation](https://developers.google.com/google-ads/api/docs/start)
+- [OAuth 2.0 Setup](https://developers.google.com/google-ads/api/docs/oauth/overview)
+- [Reporting API](https://developers.google.com/google-ads/api/docs/reporting/overview)
+
+### Meta Business API
+- [Meta Marketing API](https://developers.facebook.com/docs/marketing-apis/)
+- [Facebook Login for Business](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow)
+- [Ad Insights API](https://developers.facebook.com/docs/marketing-api/insights)
 
 ## Resources
 
+### Framework & Platform
 - [Remix Docs](https://remix.run/docs/en/v1)
 - [Shopify App Remix](https://shopify.dev/docs/api/shopify-app-remix)
 - [Introduction to Shopify apps](https://shopify.dev/docs/apps/getting-started)
 - [App authentication](https://shopify.dev/docs/apps/auth)
 - [Shopify CLI](https://shopify.dev/docs/apps/tools/cli)
+
+### Development Tools
+- [Polaris Design System](https://polaris.shopify.com/)
+- [Prisma Documentation](https://www.prisma.io/docs/)
 - [App extensions](https://shopify.dev/docs/apps/app-extensions/list)
 - [Shopify Functions](https://shopify.dev/docs/api/functions)
+
+### Testing & Deployment
 - [Getting started with internationalizing your app](https://shopify.dev/docs/apps/best-practices/internationalization/getting-started)
-# shopify-ads-dashboard
+- [App deployment best practices](https://shopify.dev/docs/apps/deployment)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For support and questions:
+- Check the [Issues](../../issues) section
+- Review the `DEPLOYMENT.md` guide
+- Consult the official [Shopify Developer Documentation](https://shopify.dev/docs)

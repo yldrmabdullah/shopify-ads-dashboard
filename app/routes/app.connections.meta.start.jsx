@@ -7,44 +7,41 @@ export const loader = async ({ request }) => {
   
   // If mock connections are enabled, simulate connection without OAuth
   if (isMockConnectionsEnabled()) {
-    console.log('Mock mode: Simulating Google OAuth success for shop:', session.shop);
+    console.log('Mock mode: Simulating Meta OAuth success for shop:', session.shop);
     
     // Set connected status for test mode
     const { setConnected } = await import("../services/connections.server.js");
-    await setConnected("google", true, session.shop);
+    await setConnected("meta", true, session.shop);
     
-    return redirect("/app/connections?google_status=connected&test_mode=true");
+    return redirect("/app/connections?meta_status=connected&test_mode=true");
   }
 
   // Production/Real OAuth mode: Real OAuth flow
   const url = new URL(request.url);
   const origin = `${url.protocol}//${url.host}`;
-  const credentials = getCredentials('google');
-  const redirectUri = credentials?.redirectUri || `${origin}/app/connections/google/callback`;
+  const credentials = getCredentials('meta');
+  const redirectUri = credentials?.redirectUri || `${origin}/app/connections/meta/callback`;
 
   const clientId = credentials?.clientId;
   if (!clientId) {
-    console.error('Google client ID not found in configuration');
+    console.error('Meta client ID not found in configuration');
     return redirect("/app/connections?error=missing_credentials");
   }
 
   const scope = [
-    "openid",
-    "email", 
-    "profile",
-    "https://www.googleapis.com/auth/adwords",
+    "ads_read",
+    "business_management",
   ];
 
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: "code",
-    access_type: "offline",
-    include_granted_scopes: "true",
-    prompt: "consent",
-    scope: scope.join(" "),
+    scope: scope.join(","),
     state: session.shop,
   });
 
-  return redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  return redirect(`https://www.facebook.com/v20.0/dialog/oauth?${params.toString()}`);
 };
+
+
