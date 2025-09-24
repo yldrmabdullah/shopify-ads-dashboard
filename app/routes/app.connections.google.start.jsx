@@ -1,9 +1,8 @@
 import { redirect } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { isTestMode, getCurrentConfig, isMockConnectionsEnabled, getCredentials } from "../config/app.server.js";
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
+  const { isTestMode, getCurrentConfig, isMockConnectionsEnabled, getCredentials } = await import("../config/app.server.js");
   
   // If mock connections are enabled, simulate connection without OAuth
   if (isMockConnectionsEnabled()) {

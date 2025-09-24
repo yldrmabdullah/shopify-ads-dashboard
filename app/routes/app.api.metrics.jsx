@@ -1,8 +1,6 @@
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { fetchMetrics } from "../services/connections.server.js";
-import { isTestMode } from "../config/app.server.js";
-
 export const action = async ({ request }) => {
   try {
     const { session } = await authenticate.admin(request);
@@ -18,6 +16,7 @@ export const action = async ({ request }) => {
     }
     
     const formData = await request.formData();
+    const { isTestMode } = await import("../config/app.server.js");
     const platform = formData.get("platform");
     const dateRangeString = formData.get("dateRange");
     

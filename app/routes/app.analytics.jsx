@@ -5,11 +5,10 @@ import { useMemo, useState, useEffect } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import IconHeader from "../components/IconHeader";
 import DateRangeControls, { getPresetRange } from "../components/DateRangeControls";
-import { isTestMode } from "../config/app.server.js";
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const { isConnected } = await import("../services/connections.server.js");
+  const { isTestMode } = await import("../config/app.server.js");
   
   return { 
     googleConnected: await isConnected("google", session.shop),
