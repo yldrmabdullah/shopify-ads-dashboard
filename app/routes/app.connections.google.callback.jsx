@@ -1,0 +1,65 @@
+import { redirect } from "@remix-run/node";
+import { authenticate } from "../shopify.server";
+import { saveGoogleAuth, setConnected } from "../services/connections.server";
+import { getCredentials } from "../config/app.server.js";
+
+export const loader = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+
+  if (error) {
+    return redirect(`/app/connections?google_error=${encodeURIComponent(error)}`);
+  }
+  if (!code) {
+    return redirect(`/app/connections?google_error=missing_code`);
+  }
+
+  const origin = `${url.protocol}//${url.host}`;
+  const credentials = getCredentials('google');
+  const redirectUri = credentials?.redirectUri || `${origin}/app/connections/google/callback`;
+
+  if (!credentials?.clientId || !credentials?.clientSecret) {
+    console.error('Google credentials not found in configuration');
+    return redirect(`/app/connections?google_error=missing_credentials`);
+  }
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      code,
+      client_id: credentials.clientId,
+      client_secret: credentials.clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: "authorization_code",
+    }).toString(),
+  });
+
+  if (!tokenRes.ok) {
+    return redirect(`/app/connections?google_error=token_exchange_failed`);
+  }
+
+  const tokenJson = await tokenRes.json();
+  const refreshToken = tokenJson.refresh_token;
+  const email = tokenJson.email;
+
+  if (!refreshToken) {
+    return redirect(`/app/connections?google_error=missing_refresh_token`);
+  }
+
+  await saveGoogleAuth({
+    shopDomain: session.shop,
+    refreshToken,
+    email,
+    managerId: null,
+    managerName: null,
+    selectedExternalId: null,
+    selectedName: null,
+    currencyCode: null,
+  });
+
+  await setConnected("google", true, session.shop);
+  return redirect("/app/connections?google_status=connected");
+};

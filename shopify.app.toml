@@ -2,7 +2,7 @@
 
 client_id = "e9e4fb033620877bbf08eb419971eb98"
 name = "byte-digital-dev"
-application_url = "https://america-open-buttons-beliefs.trycloudflare.com"
+application_url = "https://articles-background-copy-piece.trycloudflare.com"
 embedded = true
 handle = "byte-digital-dev"
 
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products"
 
 [auth]
-redirect_urls = ["https://america-open-buttons-beliefs.trycloudflare.com/auth/callback", "https://america-open-buttons-beliefs.trycloudflare.com/auth/shopify/callback", "https://america-open-buttons-beliefs.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://articles-background-copy-piece.trycloudflare.com/auth/callback", "https://articles-background-copy-piece.trycloudflare.com/auth/shopify/callback", "https://articles-background-copy-piece.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false
