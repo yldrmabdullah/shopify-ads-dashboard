@@ -4,12 +4,11 @@ import { Page, Layout, Card, BlockStack, Text, InlineStack, Button, InlineGrid, 
 import IconHeader from "../components/IconHeader";
 import { Form, useLoaderData } from "@remix-run/react";
 import { redirect } from "@remix-run/node";
-import { isTestMode } from "../config/app.server.js";
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shopDomain = session.shop;
   const { isConnected } = await import("../services/connections.server.js");
+  const { isTestMode } = await import("../config/app.server.js");
   return {
     googleConnected: await isConnected("google", shopDomain),
     metaConnected: await isConnected("meta", shopDomain),
