@@ -7,6 +7,8 @@ import ConnectPrompt from "../components/ConnectPrompt";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
+import CampaignInsights from "../components/CampaignInsights";
+import RealTimeChart from "../components/RealTimeChart";
 import { isTestMode } from "../config/app.server.js";
 
 export const loader = async ({ request }) => {
@@ -86,6 +88,15 @@ export default function GooglePage() {
         )}
         {connected ? (
           <Layout.Section>
+            <RealTimeChart 
+              metricsData={campaignData}
+              platform="google"
+              isTestMode={testMode}
+            />
+          </Layout.Section>
+        ) : null}
+        {connected ? (
+          <Layout.Section>
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd">Campaigns</Text>
@@ -96,6 +107,15 @@ export default function GooglePage() {
                 />
               </BlockStack>
             </Card>
+          </Layout.Section>
+        ) : null}
+        {connected ? (
+          <Layout.Section>
+            <CampaignInsights 
+              campaigns={campaignData?.campaigns}
+              platform="google"
+              isTestMode={testMode}
+            />
           </Layout.Section>
         ) : null}
       </Layout>
