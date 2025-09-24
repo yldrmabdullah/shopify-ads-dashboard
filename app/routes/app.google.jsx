@@ -9,11 +9,10 @@ import KeyMetrics from "../components/KeyMetrics";
 import IconHeader from "../components/IconHeader";
 import CampaignInsights from "../components/CampaignInsights";
 import RealTimeChart from "../components/RealTimeChart";
-import { isTestMode } from "../config/app.server.js";
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const { isConnected } = await import("../services/connections.server.js");
+  const { isTestMode } = await import("../config/app.server.js");
   const connected = await isConnected("google", session.shop);
   return { 
     connected, 

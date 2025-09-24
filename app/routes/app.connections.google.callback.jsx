@@ -1,8 +1,6 @@
 import { redirect } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { saveGoogleAuth, setConnected } from "../services/connections.server";
-import { getCredentials } from "../config/app.server.js";
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const url = new URL(request.url);
@@ -17,6 +15,7 @@ export const loader = async ({ request }) => {
   }
 
   const origin = `${url.protocol}//${url.host}`;
+  const { getCredentials } = await import("../config/app.server.js");
   const credentials = getCredentials('google');
   const redirectUri = credentials?.redirectUri || `${origin}/app/connections/google/callback`;
 
