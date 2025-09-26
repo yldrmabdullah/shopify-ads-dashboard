@@ -9,7 +9,7 @@ generator client {
 // enough when changing adapters.
 // See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -29,52 +29,4 @@ model Session {
   locale        String?
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
-}
-
-model Shop {
-  id         String  @id @default(cuid())
-  shopDomain String  @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  connections AdPlatformConnection[]
-}
-
-model AdPlatformConnection {
-  id         String  @id @default(cuid())
-  shopId     String
-  platform   String // 'google' | 'meta'
-  status     String  @default("connected")
-  connectedAt DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  shop Shop @relation(fields: [shopId], references: [id])
-  google GoogleConnection?
-  meta   MetaConnection?
-
-  @@unique([shopId, platform])
-}
-
-model GoogleConnection {
-  id               String @id @default(cuid())
-  connectionId     String @unique
-  refreshTokenEnc  String
-  email            String?
-  managerId        String?
-  managerName      String?
-  selectedExternalId String?
-  selectedName     String?
-  currencyCode     String?
-
-  connection AdPlatformConnection @relation(fields: [connectionId], references: [id])
-}
-
-model MetaConnection {
-  id               String @id @default(cuid())
-  connectionId     String @unique
-  longLivedTokenEnc String
-  metaAccountId    String?
-  metaAdId         String?
-  metaAdName       String?
-
-  connection AdPlatformConnection @relation(fields: [connectionId], references: [id])
 }
