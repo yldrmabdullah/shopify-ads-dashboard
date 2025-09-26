@@ -7,6 +7,7 @@ import { MetaAdsClient, validateMetaAccessToken } from "./meta-ads.server.js";
 
 export async function isConnected(platform, shopDomain) {
   if (!shopDomain) return false;
+  if (!prisma) return false;
   const shop = await prisma.shop.findUnique({ where: { shopDomain } });
   if (!shop) return false;
   const conn = await prisma.adPlatformConnection.findUnique({ where: { shopId_platform: { shopId: shop.id, platform } } });
