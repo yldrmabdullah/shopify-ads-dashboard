@@ -2,7 +2,7 @@
 
 client_id = "e9e4fb033620877bbf08eb419971eb98"
 name = "byte-digital-dev"
-application_url = "https://afternoon-idaho-representatives-bicycle.trycloudflare.com"
+application_url = "https://shopify-ads-dashboard-ur9h.vercel.app"
 embedded = true
 handle = "byte-digital-dev"
 
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products"
 
 [auth]
-redirect_urls = ["https://afternoon-idaho-representatives-bicycle.trycloudflare.com/auth/callback", "https://afternoon-idaho-representatives-bicycle.trycloudflare.com/auth/shopify/callback", "https://afternoon-idaho-representatives-bicycle.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://shopify-ads-dashboard-ur9h.vercel.app/auth/callback", "https://shopify-ads-dashboard-ur9h.vercel.app/auth/shopify/callback", "https://shopify-ads-dashboard-ur9h.vercel.app/api/auth/callback"]
 
 [pos]
 embedded = false
