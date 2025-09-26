@@ -2,6 +2,7 @@
   "buildCommand": "npm run setup && npm run build",
   "framework": "remix",
   "env": {
-    "SHOPIFY_APP_URL": "https://shopify-ads-dashboard-ur9h.vercel.app"
+    "SHOPIFY_APP_URL": "https://shopify-ads-dashboard-ur9h.vercel.app",
+    "DATABASE_URL": "file:./prisma/dev.sqlite"
   }
 }
