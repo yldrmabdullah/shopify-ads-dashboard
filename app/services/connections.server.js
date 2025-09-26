@@ -1,13 +1,17 @@
 import prisma from "../db.server";
 import { encrypt, decrypt } from "../utils/crypto.server";
-import { isTestMode, getCurrentConfig, isMockDataEnabled, getCredentials } from "../config/app.server.js";
+import { isTestMode, getCurrentConfig, isMockDataEnabled, getCredentials, isMockConnectionsEnabled } from "../config/app.server.js";
 import { getMockData } from "../data/mockData.server.js";
 import { GoogleAdsClient, refreshGoogleAccessToken } from "./google-ads.server.js";
 import { MetaAdsClient, validateMetaAccessToken } from "./meta-ads.server.js";
 
 export async function isConnected(platform, shopDomain) {
   if (!shopDomain) return false;
-  if (!prisma) return false;
+  // In mock mode, simulate connected state for local development
+  if (isMockConnectionsEnabled && typeof isMockConnectionsEnabled === "function" && isMockConnectionsEnabled()) {
+    return true;
+  }
+  if (!prisma || !prisma.shop || !prisma.adPlatformConnection) return false;
   const shop = await prisma.shop.findUnique({ where: { shopDomain } });
   if (!shop) return false;
   const conn = await prisma.adPlatformConnection.findUnique({ where: { shopId_platform: { shopId: shop.id, platform } } });
@@ -16,6 +20,10 @@ export async function isConnected(platform, shopDomain) {
 
 export async function setConnected(platform, connected, shopDomain) {
   if (!shopDomain) return;
+  if (isMockConnectionsEnabled && typeof isMockConnectionsEnabled === "function" && isMockConnectionsEnabled()) {
+    return; // No-op in mock mode
+  }
+  if (!prisma || !prisma.shop || !prisma.adPlatformConnection) return;
   let shop = await prisma.shop.findUnique({ where: { shopDomain } });
   if (!shop) shop = await prisma.shop.create({ data: { shopDomain } });
   const base = {
