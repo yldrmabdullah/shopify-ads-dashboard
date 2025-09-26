@@ -1,5 +1,6 @@
 export const appConfig = {
-  isTestMode: process.env.NODE_ENV !== 'production',
+  // Base flags; final decision is made in isTestMode()
+  isTestMode: process.env.NODE_ENV !== 'production' || process.env.APP_TEST_MODE === 'true',
   
   testMode: {
     enableMockConnections: true,
@@ -37,11 +38,11 @@ export const appConfig = {
 };
 
 export function getCurrentConfig() {
-  return appConfig.isTestMode ? appConfig.testMode : appConfig.productionMode;
+  return isTestMode() ? appConfig.testMode : appConfig.productionMode;
 }
 
 export function isTestMode() {
-  return appConfig.isTestMode;
+  return process.env.NODE_ENV !== 'production' || process.env.APP_TEST_MODE === 'true';
 }
 
 export function getCredentials(platform) {
