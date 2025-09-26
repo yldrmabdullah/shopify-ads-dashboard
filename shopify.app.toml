@@ -26,11 +26,7 @@ api_version = "2025-07"
 scopes = "read_products,write_products"
 
 [auth]
-redirect_urls = [
-  "https://shopify-ads-dashboard-ur9h.vercel.app/auth/callback",
-  "https://shopify-ads-dashboard-ur9h.vercel.app/auth/shopify/callback",
-  "https://shopify-ads-dashboard-ur9h.vercel.app/api/auth/callback"
-]
+redirect_urls = ["https://shopify-ads-dashboard-ur9h.vercel.app/auth/callback", "https://shopify-ads-dashboard-ur9h.vercel.app/auth/shopify/callback", "https://shopify-ads-dashboard-ur9h.vercel.app/api/auth/callback"]
 
 [pos]
 embedded = false
